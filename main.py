@@ -7,11 +7,16 @@ import params
 import utils
 import scipy.misc
 
+def normalize_image(images):
+    images = images * params.image_std + params.image_mean
+    images = tf.cast(images, tf.uint8)
+    return images
+
 def collect_summaries(results):
     summaries = []
     for item in results.items():
         if "image" in item[0]:
-            summaries.append(tf.summary.image(item[0], item[1]))
+            summaries.append(tf.summary.image(item[0], normalize_image(item[1])))
         elif "loss" in item[0]:
             summaries.append(tf.summary.scalar(item[0], item[1]))
 
@@ -27,8 +32,8 @@ def load_images(batch_size, a_list, b_list):
         image_b = scipy.misc.imread(b_list[i], mode = "RGB")
         image_a = scipy.misc.imresize(image_a, (params.image_size, params.image_size))
         image_b = scipy.misc.imresize(image_b, (params.image_size, params.image_size))
-        image_a = image_a.astype(np.float32) / 255
-        image_b = image_b.astype(np.float32) / 255
+        image_a = (image_a.astype(np.float32) - params.image_mean) / params.image_std
+        image_b = (image_b.astype(np.float32) - params.image_mean) / params.image_std
         images_a.append(image_a)
         images_b.append(image_b)
 
@@ -108,9 +113,9 @@ if __name__ == "__main__":
         summary_writer.add_summary(summary, counter)
         counter += 1
 
-        print("[{:06d}/{:06d}]\tElapsed time in update: {}".format(iter + 1, params.num_iters, timer.toc()))
+        print("[{:07d}/{:07d}]\tElapsed time in update: {}".format(iter + 1, params.num_iters, timer.toc()))
 
         if (iter + 1) % params.checkpoint_steps == 0:
             saver.save(sess, os.path.join(params.outputs, "model.ckpt"))
-            print("Saving checkpoint at iteration {:06d}".format(iter + 1))
+            print("Saving checkpoint at iteration {:07d}".format(iter + 1))
 
