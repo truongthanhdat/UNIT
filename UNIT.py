@@ -77,11 +77,12 @@ def unit(image_a, image_b):
     results.z_a = encoder(image_a, scope = "encoder_A", reuse = False)
     results.z_b = encoder(image_b, scope = "encoder_B", reuse = False)
     z = tf.concat([results.z_a, results.z_b], axis = 0)
-    #Deconde Image
-    new_image = decoder(z, scope = "decoder_A", reuse = False)
-    results.image_a2a, results.image_b2a= tf.split(new_image, 2, axis = 0)
-    new_image = decoder(z, scope = "decoder_B", reuse = False)
-    results.image_a2b, results.image_b2b = tf.split(new_image, 2, axis = 0)
+    #Decode Image
+    results.image_a2a = decoder(results.z_a, "decoder_A", reuse = False)
+    results.image_b2b = decoder(results.z_b, "decoder_B", reuse = False)
+    #Decode Cross Domain
+    results.image_a2b = decoder(results.z_a, "decoder_B", reuse = True)
+    results.image_b2a = decoder(results.z_b, "decoder_A", reuse = True)
     #Encode Again
     results.z_ba = encoder(results.image_b2a, scope = "encoder_A", reuse = True)
     results.z_ab = encoder(results.image_a2b, scope = "encoder_B", reuse = True)
