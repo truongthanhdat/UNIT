@@ -10,14 +10,14 @@ attention = edict()
 loss = edict()
 
 encoder.channel = 64
-encoder.n_enconder = 4
+encoder.n_enconder = 3
 encoder.n_resblock = 4
 encoder.weights_initializer = tf.truncated_normal_initializer(stddev=0.02)
 encoder.norm_fn = ops.instance_norm
 encoder.dropout_ratio = 0.0
 
-decoder.channel = 512
-decoder.n_decoder = 4
+decoder.channel = 256
+decoder.n_decoder = 3
 decoder.n_resblock = 4
 decoder.weights_initializer = tf.truncated_normal_initializer(stddev=0.02)
 decoder.norm_fn = ops.instance_norm
@@ -40,8 +40,11 @@ outputs = "outputs"
 learning_rate = 1E-4
 weight_decay = 2E-5
 checkpoint_steps = 1000
-num_iters = 100000
+num_iters = 1000000
 beta1 = 0.5
 beta2 = 0.999
 batch_size = 1
 image_size = 256
+
+image_mean = 127.5
+image_std = 127.5
