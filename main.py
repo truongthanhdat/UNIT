@@ -12,6 +12,7 @@ def normalize_image(images):
     images = tf.cast(images, tf.uint8)
     return images
 
+
 def collect_summaries(results):
     summaries = []
     for item in results.items():
@@ -19,6 +20,8 @@ def collect_summaries(results):
             summaries.append(tf.summary.image(item[0], normalize_image(item[1])))
         elif "loss" in item[0]:
             summaries.append(tf.summary.scalar(item[0], item[1]))
+        elif "mask" in item[0]:
+            summaries.append(tf.summary.image(item[0], tf.cast(item[1] * 255, tf.unit8))
 
     return summaries
 
