@@ -3,6 +3,7 @@ import tensorflow.contrib.slim as slim
 from tensorflow.contrib.layers.python.layers import initializers
 import utils
 import params
+import vgg
 
 def leaky_relu(inputs):
     return tf.nn.leaky_relu(inputs, 0.01)
@@ -98,6 +99,38 @@ def KL_divergence(mu) :
 def L1_loss(x, y) :
     loss = tf.reduce_mean(tf.abs(x - y))
     return loss
+
+def multiply_mask(images, mask):
+    r, g, b = tf.split(images, 3, 3)
+    r = tf.multiply(r, mask)
+    g = tf.multiply(g, mask)
+    b = tf.multiply(b, mask)
+    return tf.concat([r, g, b], axis = 3)
+
+def vgg_preprocess(image):
+    channels = tf.split(axis = 3, num_or_size_splits = 3, value = image)
+    for i in range(3):
+        channels[i] -= params.means[i]
+    return tf.concat(axis = 3, values = channels)
+
+def perceptual_loss(real, fake):
+    real = real * params.image_std + params.image_mean
+    fake = fake * params.image_std + params.image_mean
+    real = vgg_preprocess(real)
+    fake = vgg_preprocess(fake)
+    image = tf.concat([real, fake], axis = 0)
+
+    with slim.arg_scope(vgg.vgg_arg_scope()):
+        features = vgg.vgg_16(image, num_classes = None, is_training = False)
+
+    real, fake = tf.split(features, 2, 0)
+
+    return tf.reduce_mean( tf.square(real - fake) )
+
+def load_pretrained_vgg(sess, path):
+    vgg_vars = slim.get_variables(scope = "vgg_16")
+    saver = tf.train.Saver(vgg_vars)
+    saver.restore(sess, path)
 
 
 def discriminator_loss(real, fake, smoothing=False, use_lasgan=False) :
