@@ -36,6 +36,7 @@ loss.vgg_w = 1                      # weight of domain-invariant perceptual loss
 
 pretrained_vgg_path = "./pretrained/vgg_16.ckpt"
 means = [123.68, 116.779, 103.939]
+add_attention = False
 
 data_root_path = "./datasets/horse2zebra"
 outputs = "outputs"
