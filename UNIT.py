@@ -100,7 +100,7 @@ def unit(image_a, image_b, is_training = True, add_attention = True):
 
     adv_loss = params.loss.gan_w * (ops.discriminator_loss(real_a, fake_a) + ops.discriminator_loss(real_b, fake_b))
 
-    perceptual_loss = ops.perceptual_loss(
+    perceptual_loss = params.loss.vgg_w * ops.perceptual_loss(
                 tf.concat([image_a, image_b], axis = 0),
                 tf.concat([image_a2b, image_b2a], axis = 0)
             )
