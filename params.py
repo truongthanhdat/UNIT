@@ -32,8 +32,10 @@ loss.recon_h_w = 0                  # weight of hidden reconstruction loss
 loss.recon_kl_w = 0.01              # weight of KL loss for reconstruction
 loss.recon_x_cyc_w = 10             # weight of cycle consistency loss
 loss.recon_kl_cyc_w = 0.01          # weight of KL loss for cycle consistency
-loss.vgg_w = 0                      # weight of domain-invariant perceptual loss
+loss.vgg_w = 1                      # weight of domain-invariant perceptual loss
 
+pretrained_vgg_path = "./pretrained/vgg_16.ckpt"
+means = [123.68, 116.779, 103.939]
 
 data_root_path = "./datasets/horse2zebra"
 outputs = "outputs"
@@ -43,7 +45,7 @@ checkpoint_steps = 1000
 num_iters = 1000000
 beta1 = 0.5
 beta2 = 0.999
-batch_size = 1
+batch_size = 2
 image_size = 256
 
 image_mean = 127.5
