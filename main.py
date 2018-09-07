@@ -4,51 +4,9 @@ import os
 import numpy as np
 import UNIT
 import params
-import utils
+from utils import Timer, load_images, collect_summaries
 import scipy.misc
-
-def normalize_image(images):
-    images = images * params.image_std + params.image_mean
-    images = tf.cast(images, tf.uint8)
-    return images
-
-
-def collect_summaries(results):
-    summaries = []
-    for item in results.items():
-        if "image" in item[0]:
-            summaries.append(tf.summary.image(item[0], normalize_image(item[1])))
-        elif "loss" in item[0]:
-            summaries.append(tf.summary.scalar(item[0], item[1]))
-        elif "mask" in item[0]:
-            summaries.append(tf.summary.image(item[0], tf.cast(item[1] * 255, tf.unit8))
-
-    return summaries
-
-def load_images(batch_size, a_list, b_list):
-    a_list = np.random.choice(a_list, batch_size, False)
-    b_list = np.random.choice(b_list, batch_size, False)
-    images_a = []
-    images_b = []
-    for i in range(batch_size):
-        image_a = scipy.misc.imread(a_list[i], mode = "RGB")
-        image_b = scipy.misc.imread(b_list[i], mode = "RGB")
-        image_a = scipy.misc.imresize(image_a, (params.image_size, params.image_size))
-        image_b = scipy.misc.imresize(image_b, (params.image_size, params.image_size))
-        image_a = (image_a.astype(np.float32) - params.image_mean) / params.image_std
-        image_b = (image_b.astype(np.float32) - params.image_mean) / params.image_std
-        images_a.append(image_a)
-        images_b.append(image_b)
-
-    images_a = np.concatenate(images_a, 0)
-    images_b = np.concatenate(images_b, 0)
-
-    if len(images_a.shape) == 3:
-        images_a = np.expand_dims(images_a, axis = 0)
-    if len(images_b.shape) == 3:
-        images_b = np.expand_dims(images_b, axis = 0)
-
-    return images_a, images_b
+from ops import load_pretrained_vgg
 
 
 if __name__ == "__main__":
@@ -62,7 +20,7 @@ if __name__ == "__main__":
     image_b = tf.placeholder(shape = [params.batch_size, params.image_size, params.image_size, 3], dtype = tf.float32)
     results = UNIT.unit(image_a, image_b)
 
-    gen_loss = results.gen_loss + results.L1_loss + results.KL_loss
+    gen_loss = results.gen_loss + results.L1_loss + results.KL_loss + params.loss.vgg_w * results.perceptual_loss
     adv_loss = results.adv_loss
 
     summaries = collect_summaries(results)
@@ -97,7 +55,9 @@ if __name__ == "__main__":
     if latest_checkpoint is not None:
         saver.restore(sess, latest_checkpoint)
 
-    timer = utils.Timer()
+    load_pretrained_vgg(sess = sess, path = params.pretrained_vgg_path)
+
+    timer = Timer()
     counter = 0
     for iter in range(params.num_iters):
         timer.tic()
@@ -107,6 +67,7 @@ if __name__ == "__main__":
                 image_a: _image_a,
                 image_b: _image_b
                 }
+
         #Update Discriminator
         _, summary = sess.run([D_step_op, summaries_op], feed_dict = feed_dict)
         summary_writer.add_summary(summary, counter)
@@ -116,7 +77,7 @@ if __name__ == "__main__":
         summary_writer.add_summary(summary, counter)
         counter += 1
 
-        print("[{:07d}/{:07d}]\tElapsed time in update: {}".format(iter + 1, params.num_iters, timer.toc()))
+        print("[{:07d}/{:07d}] Elapsed time in update: {}".format(iter + 1, params.num_iters, timer.toc()))
 
         if (iter + 1) % params.checkpoint_steps == 0:
             saver.save(sess, os.path.join(params.outputs, "model.ckpt"))
