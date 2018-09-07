@@ -5,176 +5,137 @@ import utils
 import params
 import ops
 from easydict import EasyDict as edict
+from network import encoder, decoder, attention, discriminator
 
-def attention(inputs, scope = "attention", is_training = True, reuse = False):
-    with tf.variable_scope(scope, reuse = reuse):
-        net = inputs
-        channel = params.encoder.channel
-        net = ops.conv(net, scope = "conv1",
-                dim = channel, kernel_size = [7, 7], stride = 1,
-                activation_fn = ops.leaky_relu, is_training = is_training,
-                weights_initializer = params.encoder.weights_initializer)
-        for i in range(1, params.encoder.n_enconder):
-            channel *= 2
-            net = ops.conv(net, scope = "conv_{}".format(i + 1),
-                    dim = channel, kernel_size = [3, 3], stride = 2,
-                    activation_fn = ops.leaky_relu, is_training = is_training,
-                    weights_initializer = params.encoder.weights_initializer)
-
-        for i in range(params.encoder.n_resblock):
-            net = ops.resblock(net, scope = "resblock_{}".format(i + 1),
-                    dim = channel, kernel_size = [3, 3], stride = 1,
-                    norm_fn = params.encoder.norm_fn, is_training = is_training,
-                    weights_initializer = params.encoder.weights_initializer,
-                    dropout_ratio = params.encoder.dropout_ratio)
-
-        channel = params.decoder.channel
-        for i in range(params.decoder.n_resblock):
-            net = ops.resblock(net, scope = "deresblock_{}".format(params.decoder.n_resblock - i),
-                    dim = channel, kernel_size = [3, 3], stride = 1,
-                    norm_fn = params.encoder.norm_fn, is_training = is_training,
-                    weights_initializer = params.encoder.weights_initializer,
-                    dropout_ratio = params.encoder.dropout_ratio)
-
-        for i in range(1, params.decoder.n_decoder):
-            channel = channel / 2
-            net = ops.deconv(net, scope = "deconv_{}".format(params.decoder.n_decoder - i + 1),
-                    dim = channel, kernel_size = [3, 3], stride = 2,
-                    activation_fn = ops.leaky_relu, is_training = is_training,
-                    weights_initializer = params.decoder.weights_initializer)
-        net = ops.deconv(net, scope = "deconv_1",
-                    dim = 1, kernel_size = [1, 1], stride = 1,
-                    activation_fn = ops.sigmoid, is_training = is_training,
-                    weights_initializer = params.decoder.weights_initializer)
-        return net
-
-def multiply_mask(images, mask):
-    r, g, b = tf.split(images, 3, 3)
-    r = tf.multiply(r, mask)
-    g = tf.multiply(g, mask)
-    b = tf.multiply(b, mask)
-    return tf.concat([r, g, b], axis = 3)
-
-def encoder(inputs, scope = "encoder", is_training = True, reuse = False):
-    with tf.variable_scope(scope, reuse = reuse):
-        channel = params.encoder.channel
-        net = inputs
-        net = ops.conv(net, scope = "conv1",
-                dim = channel, kernel_size = [7, 7], stride = 1,
-                activation_fn = ops.leaky_relu, is_training = is_training,
-                weights_initializer = params.encoder.weights_initializer)
-        for i in range(1, params.encoder.n_enconder):
-            channel *= 2
-            net = ops.conv(net, scope = "conv_{}".format(i + 1),
-                    dim = channel, kernel_size = [3, 3], stride = 2,
-                    activation_fn = ops.leaky_relu, is_training = is_training,
-                    weights_initializer = params.encoder.weights_initializer)
-        for i in range(params.encoder.n_resblock):
-            net = ops.resblock(net, scope = "resblock_{}".format(i + 1),
-                    dim = channel, kernel_size = [3, 3], stride = 1,
-                    norm_fn = params.encoder.norm_fn, is_training = is_training,
-                    weights_initializer = params.encoder.weights_initializer,
-                    dropout_ratio = params.encoder.dropout_ratio)
-
-        net = ops.gaussian_noise_layer(net)
-        return net
-
-def decoder(inputs, scope = "decoder", is_training = True, reuse = False):
-    with tf.variable_scope(scope, reuse = reuse):
-        channel = params.decoder.channel
-        net = inputs
-        for i in range(params.decoder.n_resblock):
-            net = ops.resblock(net, scope = "resblock_{}".format(params.decoder.n_resblock - i),
-                    dim = channel, kernel_size = [3, 3], stride = 1,
-                    norm_fn = params.encoder.norm_fn, is_training = is_training,
-                    weights_initializer = params.encoder.weights_initializer,
-                    dropout_ratio = params.encoder.dropout_ratio)
-
-        for i in range(1, params.decoder.n_decoder):
-            channel = channel / 2
-            net = ops.deconv(net, scope = "deconv_{}".format(params.decoder.n_decoder - i + 1),
-                    dim = channel, kernel_size = [3, 3], stride = 2,
-                    activation_fn = ops.leaky_relu, is_training = is_training,
-                    weights_initializer = params.decoder.weights_initializer)
-        net = ops.deconv(net, scope = "deconv_1",
-                    dim = 3, kernel_size = [1, 1], stride = 1,
-                    activation_fn = ops.tanh, is_training = is_training,
-                    weights_initializer = params.decoder.weights_initializer)
-        return net
-
-def discriminator(inputs, scope = "discriminator", is_training = True, reuse = False):
-    with tf.variable_scope(scope, reuse = reuse):
-        net = inputs
-        channel = params.discriminator.channel
-        for i in range(params.discriminator.n_discriminator - 1):
-            net = ops.conv(net, scope = "conv_{}".format(i + 1),
-                    dim = channel, kernel_size = [3, 3], stride = 2,
-                    activation_fn = ops.leaky_relu, is_training = is_training,
-                    weights_initializer = params.encoder.weights_initializer)
-            channel *= 2
-
-        net = ops.conv(net, scope = "conv_6",
-                    dim = 1, kernel_size = [1, 1], stride = 1,
-                    activation_fn = None, is_training = is_training,
-                    weights_initializer = params.encoder.weights_initializer)
-        #Final Conv Layer uses Sigmoid
-        return net
-
-def unit(image_a, image_b):
-    results = edict()
+def unit(image_a, image_b, is_training = True, add_attention = True):
     #Encode Image
-    results.z_a = encoder(image_a, scope = "encoder_A", reuse = False)
-    results.z_b = encoder(image_b, scope = "encoder_B", reuse = False)
-    z = tf.concat([results.z_a, results.z_b], axis = 0)
-    #Compute Mask
-    mask_a = attention(image_a, scope = "attention_A", reuse = False) #A --> B
-    mask_b = attention(image_b, scope = "attention_B", reuse = False) #B --> A
+    z_a = encoder(image_a, scope = "encoder_A",
+                    reuse = False, is_training = is_training,
+                    shared_scope = "shared_encoder", shared_reuse = False)
+    z_b = encoder(image_b, scope = "encoder_B",
+                    reuse = False, is_training = is_training,
+                    shared_scope = "shared_encoder", shared_reuse = True)
+
+    if add_attention:
+        #Compute Mask
+        mask_a2b = attention(image_a, scope = "attention_A2B",
+                        reuse = False, is_training = is_training,
+                        shared_scope = "shared_attention", shared_reuse = False)
+        mask_b2a = attention(image_b, scope = "attention_B2A",
+                        reuse = False, is_training = is_training,
+                        shared_scope = "shared_attention", shared_reuse = True)
+
     #Decode Image
-    results.image_a2a = decoder(results.z_a, "decoder_A", reuse = False)
-    results.image_b2b = decoder(results.z_b, "decoder_B", reuse = False)
+    image_a2a = decoder(z_a, "decoder_A",
+                    reuse = False, is_training = is_training,
+                    shared_scope = "shared_decoder", shared_reuse = False)
+    image_b2b = decoder(z_b, "decoder_B",
+                    reuse = False, is_training = is_training,
+                    shared_scope = "shared_decoder", shared_reuse = True)
+
     #Decode Cross Domain
-    results.image_a2b = multiply_mask(decoder(results.z_a, "decoder_B", reuse = True), mask_a) + multiply_mask(image_a, 1 - mask_a)
-    results.image_b2a = multiply_mask(decoder(results.z_b, "decoder_A", reuse = True), mask_b) + multiply_mask(image_b, 1 - mask_b)
+    image_a2b = decoder(z_a, "decoder_B",
+                reuse = True, is_training = is_training,
+                shared_scope = "shared_decoder", shared_reuse = True)
+    image_b2a = decoder(z_b, "decoder_A",
+                reuse = True, is_training = is_training,
+                shared_scope = "shared_decoder", shared_reuse = True)
+    if add_attention:
+        image_a2b = ops.multiply_mask(image_a, mask_a2b) + ops.multiply_mask(image_a2b, 1 - mask_a2b)
+        image_b2a = ops.multiply_mask(image_b, mask_b2a) + ops.multiply_mask(image_b2a, 1 - mask_b2a)
+
     #Encode Again
-    results.z_ba = encoder(results.image_b2a, scope = "encoder_A", reuse = True)
-    results.z_ab = encoder(results.image_a2b, scope = "encoder_B", reuse = True)
-    #Compute Translated Mask
-    mask_ab = attention(results.image_a2b, scope = "attention_B", reuse = True)
-    mask_ba = attention(results.image_b2a, scope = "attention_A", reuse = True)
+    z_b2a = encoder(image_b2a, scope = "encoder_A",
+                reuse = True, is_training = is_training,
+                shared_scope = "shared_encoder", shared_reuse = True)
+    z_a2b = encoder(image_a2b, scope = "encoder_B",
+                reuse = True, is_training = is_training,
+                shared_scope = "shared_encoder", shared_reuse = True)
+
+    if add_attention:
+        #Compute Translated Mask
+        mask_a2b2a = attention(image_a2b, scope = "attention_B2A",
+                            reuse = True, is_training = is_training,
+                            shared_scope = "shared_attention", shared_reuse = True)
+        mask_b2a2b = attention(image_b2a, scope = "attention_A2B",
+                            reuse = True, is_training = is_training,
+                            shared_scope = "shared_attention", shared_reuse = True)
+
     #Decode Again
-    results.image_a2b2a = multiply_mask(decoder(results.z_ab, scope = "decoder_A", reuse = True), mask_ab) + multiply_mask(results.image_a2b, 1 - mask_ab)
-    results.image_b2a2b = multiply_mask(decoder(results.z_ba, scope = "decoder_B", reuse = True), mask_ba) + multiply_mask(results.image_b2a, 1 - mask_ba)
+    image_a2b2a = decoder(z_a2b, scope = "decoder_A",
+                reuse = True, is_training = is_training,
+                shared_scope = "shared_decoder", shared_reuse = True)
+    image_b2a2b = decoder(z_b2a, scope = "decoder_B",
+                reuse = True, is_training = is_training,
+                shared_scope = "shared_decoder", shared_reuse = True)
+    if add_attention:
+        image_a2b2a = ops.multiply_mask(image_a2b, mask_a2b2a) + ops.multiply_mask(image_a2b2a, 1 - mask_a2b2a)
+        image_b2a2b = ops.multiply_mask(image_b2a, mask_b2a2b) + ops.multiply_mask(image_b2a2b, 1 - mask_b2a2b)
+
+
     #Discriminator
-    results.real_a = discriminator(image_a, "discriminator_A", reuse = False)
-    results.fake_a = discriminator(results.image_b2a, "discriminator_A", reuse = True)
-    results.real_b = discriminator(image_b, "discriminator_B", reuse = False)
-    results.fake_b = discriminator(results.image_a2b, "discriminator_B", reuse = True)
+    real_a = discriminator(image_a, "discriminator_A",
+                reuse = False, is_training = is_training,
+                shared_scope = "shared_discriminator", shared_reuse = False)
+    fake_a = discriminator(image_b2a, "discriminator_A",
+                reuse = True, is_training = is_training,
+                shared_scope = "shared_discriminator", shared_reuse = True)
+
+    real_b = discriminator(image_b, "discriminator_B",
+                reuse = False, is_training = is_training,
+                shared_scope = "shared_discriminator", shared_reuse = True)
+    fake_b = discriminator(image_a2b, "discriminator_B",
+                 reuse = True, is_training = is_training,
+                shared_scope = "shared_discriminator", shared_reuse = True)
+
 
     #Build Loss
-    results.L1_loss = params.loss.recon_x_w * (ops.L1_loss(image_a, results.image_a2a) + ops.L1_loss(image_b, results.image_a2b)) + \
-              params.loss.recon_x_cyc_w * (ops.L1_loss(image_a, results.image_a2b2a) + ops.L1_loss(image_b, results.image_b2a2b))
+    L1_loss = params.loss.recon_x_w * (ops.L1_loss(image_a, image_a2a) + ops.L1_loss(image_b, image_a2b)) + \
+              params.loss.recon_x_cyc_w * (ops.L1_loss(image_a, image_a2b2a) + ops.L1_loss(image_b, image_b2a2b))
 
-    results.KL_loss = params.loss.recon_kl_w * (ops.KL_divergence(results.z_a) + ops.KL_divergence(results.z_b)) + \
-              params.loss.recon_kl_cyc_w * (ops.KL_divergence(results.z_ab) + ops.KL_divergence(results.z_ba))
+    KL_loss = params.loss.recon_kl_w * (ops.KL_divergence(z_a) + ops.KL_divergence(z_b)) + \
+              params.loss.recon_kl_cyc_w * (ops.KL_divergence(z_a2b) + ops.KL_divergence(z_b2a))
 
-    results.gen_loss = params.loss.gan_w * (ops.generator_loss(results.fake_a) + ops.generator_loss(results.fake_b))
+    gen_loss = params.loss.gan_w * (ops.generator_loss(fake_a) + ops.generator_loss(fake_b))
 
-    results.adv_loss = params.loss.gan_w * (ops.discriminator_loss(results.real_a, results.fake_a) + ops.discriminator_loss(results.real_b, results.fake_b))
+    adv_loss = params.loss.gan_w * (ops.discriminator_loss(real_a, fake_a) + ops.discriminator_loss(real_b, fake_b))
 
-    results.image_a = image_a
-    results.image_b = image_b
-    results.mask_a = mask_a
-    results.mask_b = mask_b
-    results.mask_ab = mask_ab
-    results.mask_ba = mask_ba
+    perceptual_loss = ops.perceptual_loss(
+                tf.concat([image_a, image_b], axis = 0),
+                tf.concat([image_a2b, image_b2a], axis = 0)
+            )
 
-    return results
+    if add_attention:
+        return edict({
+            "image_a": image_a, "image_b": image_b,
+            "image_a2a": image_a2a, "image_a2b": image_b2b,
+            "image_a2b": image_a2b, "image_b2a": image_b2a,
+            "image_a2b2a": image_a2b2a, "image_b2a2b": image_b2a2b,
+            "mask_a2b": mask_a2b, "mask_b2a": mask_b2a,
+            "mask_a2b2a": mask_a2b2a, "mask_b2a2a": mask_b2a2b,
+            "L1_loss": L1_loss, "KL_loss": KL_loss, "perceptual_loss": perceptual_loss,
+            "gen_loss": gen_loss, "adv_loss": adv_loss
+        })
+    else:
+        return edict({
+            "image_a": image_a, "image_b": image_b,
+            "image_a2a": image_a2a, "image_a2b": image_b2b,
+            "image_a2b": image_a2b, "image_b2a": image_b2a,
+            "image_a2b2a": image_a2b2a, "image_b2a2b": image_b2a2b,
+            "L1_loss": L1_loss, "KL_loss": KL_loss, "perceptual_loss": perceptual_loss,
+            "gen_loss": gen_loss, "adv_loss": adv_loss
+        })
 
 if __name__ == "__main__":
     image_a = tf.placeholder(shape = [1, 256, 256, 3], dtype = tf.float32)
     image_b = tf.placeholder(shape = [1, 256, 256, 3], dtype = tf.float32)
 
-    results = unit(image_a, image_b)
+    results = unit(image_a, image_b, add_attention = False)
     for item in results.items():
         print(item)
+
+    variables = slim.get_variables()
+    for var in variables:
+        print(var.name)
+    print("Number of Variables: {}".format(len(variables)))
 
