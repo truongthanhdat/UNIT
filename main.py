@@ -18,7 +18,8 @@ if __name__ == "__main__":
 
     image_a = tf.placeholder(shape = [params.batch_size, params.image_size, params.image_size, 3], dtype = tf.float32)
     image_b = tf.placeholder(shape = [params.batch_size, params.image_size, params.image_size, 3], dtype = tf.float32)
-    results = UNIT.unit(image_a, image_b, params.add_attention)
+
+    results = UNIT.unit(image_a, image_b, add_attention = params.add_attention, is_training = True)
 
     gen_loss = results.gen_loss + results.L1_loss + results.KL_loss +  results.perceptual_loss
     adv_loss = results.adv_loss
