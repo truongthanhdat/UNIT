@@ -32,7 +32,7 @@ loss.recon_h_w = 0                  # weight of hidden reconstruction loss
 loss.recon_kl_w = 0.01              # weight of KL loss for reconstruction
 loss.recon_x_cyc_w = 10             # weight of cycle consistency loss
 loss.recon_kl_cyc_w = 0.01          # weight of KL loss for cycle consistency
-loss.vgg_w = 1                      # weight of domain-invariant perceptual loss
+loss.vgg_w = 0.05                      # weight of domain-invariant perceptual loss
 
 pretrained_vgg_path = "./pretrained/vgg_16.ckpt"
 means = [123.68, 116.779, 103.939]

@@ -1,6 +1,8 @@
 import time
 import numpy as np
 import scipy.misc
+import tensorflow as tf
+import params
 
 def normalize_image(images):
     images = images * params.image_std + params.image_mean
@@ -14,6 +16,8 @@ def collect_summaries(results):
             summaries.append(tf.summary.image(item[0], normalize_image(item[1])))
         elif "loss" in item[0]:
             summaries.append(tf.summary.scalar(item[0], item[1]))
+        elif "mask" in item[0]:
+            summaries.append(tf.summary.scalar(item[0], tf.cast(item[1] * 255, tf.uint8)))
 
     return summaries
 
