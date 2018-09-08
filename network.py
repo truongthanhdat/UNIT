@@ -166,13 +166,13 @@ def discriminator(inputs, scope = "discriminator",
             net = ops.conv(net, scope = "conv_{}".format(i + 1),
                     dim = channel, kernel_size = [3, 3], stride = 2,
                     activation_fn = ops.leaky_relu, is_training = is_training,
-                    weights_initializer = params.encoder.weights_initializer)
+                    weights_initializer = params.discriminator.weights_initializer)
             channel *= 2
 
         net = ops.conv(net, scope = "conv_6",
                     dim = 1, kernel_size = [1, 1], stride = 1,
                     activation_fn = None, is_training = is_training,
-                    weights_initializer = params.encoder.weights_initializer)
+                    weights_initializer = params.discriminator.weights_initializer)
         #Final Conv Layer uses Sigmoid
         return net
 
