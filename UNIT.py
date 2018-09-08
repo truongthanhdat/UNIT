@@ -118,9 +118,9 @@ def unit(image_a, image_b, is_training = True, add_attention = True):
             "gen_loss": gen_loss, "adv_loss": adv_loss
         })
     else:
-        return edict({
+         return edict({
             "image_a": image_a, "image_b": image_b,
-            "image_a2a": image_a2a, "image_a2b": image_b2b,
+            "image_a2a": image_a2a, "image_a2b": image_a2b,
             "image_b2b": image_b2b, "image_b2a": image_b2a,
             "image_a2b2a": image_a2b2a, "image_b2a2b": image_b2a2b,
             "L1_loss": L1_loss, "KL_loss": KL_loss, "perceptual_loss": perceptual_loss,
