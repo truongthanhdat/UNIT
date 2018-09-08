@@ -107,30 +107,34 @@ def multiply_mask(images, mask):
     b = tf.multiply(b, mask)
     return tf.concat([r, g, b], axis = 3)
 
-def vgg_preprocess(image):
-    channels = tf.split(axis = 3, num_or_size_splits = 3, value = image)
-    for i in range(3):
-        channels[i] -= params.means[i]
-    return tf.concat(axis = 3, values = channels)
 
-def perceptual_loss(real, fake):
-    real = real * params.image_std + params.image_mean
-    fake = fake * params.image_std + params.image_mean
-    real = vgg_preprocess(real)
-    fake = vgg_preprocess(fake)
+
+def perceptual_loss(real, fake, network = "vgg_16"):
+    if params.loss.vgg_w <= 0.0:
+        return 0.0
+
+    real = real * params.learning.image_std + params.learning.image_mean
+    fake = fake * params.learning.image_std + params.learning.image_mean
+    real = utils.perceptual_loss_image_preprocess(real)
+    fake = utils.perceptual_loss_image_preprocess(fake)
     image = tf.concat([real, fake], axis = 0)
 
-    with slim.arg_scope(vgg.vgg_arg_scope()):
-        features = vgg.vgg_16(image, num_classes = None, is_training = False)
+    with tf.variable_scope("perceptual_loss"):
+        if network == "vgg_16":
+            with slim.arg_scope(vgg.vgg_arg_scope()):
+                conv1, conv2, conv3 = vgg.vgg_16(image)
+        elif network == "vgg_19":
+            with slim.arg_scope(vgg.vgg_arg_scope()):
+                conv1, conv2, conv3 = vgg.vgg_19(image)
+        else:
+            raise NotImplementedError("")
 
-    real, fake = tf.split(features, 2, 0)
+        losses = []
+        for i, features in enumerate([conv1, conv2, conv3]):
+            real, fake = tf.split(features, 2, 0)
+            losses.append( params.loss.perceptual_loss.weights[i] * tf.reduce_mean( tf.square(real - fake) ) )
 
-    return tf.reduce_mean( tf.square(real - fake) )
-
-def load_pretrained_vgg(sess, path):
-    vgg_vars = slim.get_variables(scope = "vgg_16")
-    saver = tf.train.Saver(vgg_vars)
-    saver.restore(sess, path)
+        return losses[0] + losses[1] + losses[2]
 
 
 def discriminator_loss(real, fake, smoothing=False, use_lasgan=False) :

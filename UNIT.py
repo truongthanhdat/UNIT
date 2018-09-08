@@ -102,13 +102,14 @@ def unit(image_a, image_b, is_training = True, add_attention = True):
 
     perceptual_loss = params.loss.vgg_w * ops.perceptual_loss(
                 tf.concat([image_a, image_b], axis = 0),
-                tf.concat([image_a2b, image_b2a], axis = 0)
+                tf.concat([image_a2b, image_b2a], axis = 0),
+                params.loss.perceptual_loss.network
             )
 
     if add_attention:
         return edict({
             "image_a": image_a, "image_b": image_b,
-            "image_a2a": image_a2a, "image_a2b": image_b2b,
+            "image_a2a": image_a2a, "image_a2b": image_a2b,
             "image_b2b": image_b2b, "image_b2a": image_b2a,
             "image_a2b2a": image_a2b2a, "image_b2a2b": image_b2a2b,
             "mask_a2b": mask_a2b, "mask_b2a": mask_b2a,

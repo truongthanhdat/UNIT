@@ -2,10 +2,11 @@ import time
 import numpy as np
 import scipy.misc
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 import params
 
 def normalize_image(images):
-    images = images * params.image_std + params.image_mean
+    images = images * params.learning.image_std + params.learning.image_mean
     images = tf.cast(images, tf.uint8)
     return images
 
@@ -29,10 +30,10 @@ def load_images(batch_size, a_list, b_list):
     for i in range(batch_size):
         image_a = scipy.misc.imread(a_list[i], mode = "RGB")
         image_b = scipy.misc.imread(b_list[i], mode = "RGB")
-        image_a = scipy.misc.imresize(image_a, (params.image_size, params.image_size))
-        image_b = scipy.misc.imresize(image_b, (params.image_size, params.image_size))
-        image_a = (image_a.astype(np.float32) - params.image_mean) / params.image_std
-        image_b = (image_b.astype(np.float32) - params.image_mean) / params.image_std
+        image_a = scipy.misc.imresize(image_a, (params.learning.image_size, params.learning.image_size))
+        image_b = scipy.misc.imresize(image_b, (params.learning.image_size, params.learning.image_size))
+        image_a = (image_a.astype(np.float32) - params.learning.image_mean) / params.learning.image_std
+        image_b = (image_b.astype(np.float32) - params.learning.image_mean) / params.learning.image_std
         images_a.append(np.expand_dims(image_a, 0))
         images_b.append(np.expand_dims(image_b, 0))
 
@@ -46,6 +47,23 @@ def load_images(batch_size, a_list, b_list):
 
     return images_a, images_b
 
+def load_pretrained_perceptual_loss(sess, path, remove_first_scope = True):
+    variables = slim.get_variables(scope = "perceptual_loss")
+    restored_vars = {}
+    for var in variables:
+        name = var.name.split(":")[0]
+        if remove_first_scope:
+            name = "/".join(name.split("/")[1:])
+        restored_vars[name] = var
+
+    saver = tf.train.Saver(restored_vars)
+    saver.restore(sess, path)
+
+def perceptual_loss_image_preprocess(image):
+    channels = tf.split(axis = 3, num_or_size_splits = 3, value = image)
+    for i in range(3):
+        channels[i] -= params.loss.perceptual_loss.means[i]
+    return tf.concat(axis = 3, values = channels)
 
 class Timer:
     def __init__(self):
