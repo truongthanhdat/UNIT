@@ -55,7 +55,7 @@ path.pretrained_perceptual_loss_path = "./pretrained/vgg_19.ckpt"
 
 #Define Learning Hyper-parameters
 learning = edict()
-learning.learning_rate = 1E-4
+learning.learning_rate = 1E-5
 learning.weight_decay = 2E-5
 learning.checkpoint_steps = 1000
 learning.num_iters = 1000000
@@ -65,5 +65,5 @@ learning.batch_size = 2
 learning.image_size = 256
 learning.image_mean = 127.5
 learning.image_std = 127.5
-learning.summary = 250
+learning.summary = 50
 

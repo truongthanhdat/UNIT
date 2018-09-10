@@ -13,12 +13,19 @@ def normalize_image(images):
 def collect_summaries(results):
     summaries = []
     for item in results.items():
-        if "image" in item[0]:
-            summaries.append(tf.summary.image(item[0], normalize_image(item[1])))
-        elif "loss" in item[0]:
-            summaries.append(tf.summary.scalar(item[0], item[1]))
-        elif "mask" in item[0]:
+        if "loss" in item[0]:
             summaries.append(tf.summary.scalar(item[0], tf.cast(item[1] * 255, tf.uint8)))
+
+    image_a = tf.concat([results.image_a, results.image_a2a, results.image_a2b2a, results.image_a2b], axis = 2)
+    image_b = tf.concat([results.image_b, results.image_b2b, results.image_b2a2b, results.image_b2a], axis = 2)
+    summaries.append(tf.summary.image("image_a", normalize_image(image_a)))
+    summaries.append(tf.summary.image("image_b", normalize_image(image_b)))
+
+    if results.has_key("mask_a2b"):
+        mask_a = tf.concat([results.mask_a2b, results.mask_a2b2a], axis = 2)
+        mask_b = tf.concat([results.mask_b2a, results.mask_b2a2b], axis = 2)
+        summaries.append(tf.summary.image("mask_a", tf.cast(mask_a * 255, tf.uint8)))
+        summaries.append(tf.summary.image("mask_b", tf.cast(mask_b * 255, tf.uint8)))
 
     return summaries
 
