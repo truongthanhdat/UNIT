@@ -70,14 +70,14 @@ def resblock(inputs, dim, kernel_size = [3, 3], stride = 1, dropout_ratio = 0.0,
         with tf.variable_scope("res_2"):
             net = slim.conv2d(net, dim, kernel_size, stride,
                                 activation_fn = relu, #is_training = is_training,
-                                normalizer_fn = norm_fn, normalizer_params = {"is_training": is_training},
+                                normalizer_fn = None, normalizer_params = {"is_training": is_training},
                                 weights_initializer = weights_initializer)
 
-        with tf.variable_scope("res_3"):
-            net = slim.conv2d(net, dim, kernel_size, stride,
-                                activation_fn = relu, #is_training = is_training,
-                                normalizer_fn = norm_fn, normalizer_params = {"is_training": is_training},
-                                weights_initializer = weights_initializer)
+        #with tf.variable_scope("res_3"):
+        #    net = slim.conv2d(net, dim, kernel_size, stride,
+        #                        activation_fn = relu, #is_training = is_training,
+        #                        normalizer_fn = norm_fn, normalizer_params = {"is_training": is_training},
+        #                        weights_initializer = weights_initializer)
 
         net = slim.dropout(net, keep_prob = 1 - dropout_ratio, is_training = is_training)
 
