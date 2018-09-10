@@ -65,3 +65,5 @@ learning.batch_size = 2
 learning.image_size = 256
 learning.image_mean = 127.5
 learning.image_std = 127.5
+learning.summary = 250
+

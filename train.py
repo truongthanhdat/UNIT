@@ -72,12 +72,16 @@ if __name__ == "__main__":
 
         #Update Discriminator
         _, summary = sess.run([D_step_op, summaries_op], feed_dict = feed_dict)
-        summary_writer.add_summary(summary, counter)
-        counter += 1
+
+        if (iter + 1) % params.learning.summary == 0:
+            summary_writer.add_summary(summary, counter)
+            counter += 1
+
         #Update Generator
         _, summary = sess.run([G_step_op, summaries_op], feed_dict = feed_dict)
-        summary_writer.add_summary(summary, counter)
-        counter += 1
+        if (iter + 1) % params.learning.summary == 0:
+            summary_writer.add_summary(summary, counter)
+            counter += 1
 
         print("[{:07d}/{:07d}] Elapsed time in update: {}".format(iter + 1, params.learning.num_iters, timer.toc()))
 
