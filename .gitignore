@@ -2,4 +2,4 @@
 *.jpg
 *.zip
 outputs/*
-*.cpkt*
+*.ckpt*
