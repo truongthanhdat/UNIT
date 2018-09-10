@@ -160,7 +160,7 @@ def discriminator_loss(real, fake, smoothing=False, use_lsgan=True) :
 
     return loss
 
-def generator_loss(fake, smoothing=False, use_lsgan=False) :
+def generator_loss(fake, smoothing=False, use_lsgan=True) :
     if use_lsgan :
         if smoothing :
             loss = tf.reduce_mean(tf.squared_difference(fake, 0.9)) * 0.5
