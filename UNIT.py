@@ -103,7 +103,6 @@ def unit(image_a, image_b, is_training = True, add_attention = True):
     gen_loss = 0.0
     adv_loss = 0.0
     for real, fake in zip(real_a + real_b, fake_a + fake_b):
-        print(real, fake)
         gen_loss += params.loss.gan_w * (ops.generator_loss(fake) + ops.generator_loss(fake))
         adv_loss += params.loss.gan_w * (ops.discriminator_loss(real, fake) + ops.discriminator_loss(real, fake))
 
