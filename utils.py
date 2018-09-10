@@ -14,7 +14,7 @@ def collect_summaries(results):
     summaries = []
     for item in results.items():
         if "loss" in item[0]:
-            summaries.append(tf.summary.scalar(item[0], tf.cast(item[1] * 255, tf.uint8)))
+            summaries.append(tf.summary.scalar(item[0], item[1]))
 
     image_a = tf.concat([results.image_a, results.image_a2a, results.image_a2b2a, results.image_a2b], axis = 2)
     image_b = tf.concat([results.image_b, results.image_b2b, results.image_b2a2b, results.image_b2a], axis = 2)
