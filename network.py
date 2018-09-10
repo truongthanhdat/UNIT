@@ -176,3 +176,16 @@ def discriminator(inputs, scope = "discriminator",
         #Final Conv Layer uses Sigmoid
         return net
 
+def multiscale_discriminator(inputs, scope = "discriminator",
+                                is_training = True, reuse = False,
+                                shared_scope = "shared_discriminator", shared_reuse = False):
+    nets = []
+    inputs_scale = inputs
+    for scale in xrange(params.discriminator.n_scales):
+        net = discriminator(inputs_scale, "{}_scale_{}".format(scope, scale + 1),
+                                is_training = is_training, reuse = reuse,
+                                shared_scope = "{}_scale_{}".format(shared_scope, scale + 1), shared_reuse = shared_reuse)
+        inputs_scale = slim.max_pool2d(inputs_scale, [3, 3], stride = 2, padding = "SAME")
+        nets.append(net)
+    return nets
+

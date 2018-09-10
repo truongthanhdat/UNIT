@@ -137,8 +137,8 @@ def perceptual_loss(real, fake, network = "vgg_16"):
         return losses[0] + losses[1] + losses[2]
 
 
-def discriminator_loss(real, fake, smoothing=False, use_lasgan=False) :
-    if use_lasgan :
+def discriminator_loss(real, fake, smoothing=False, use_lsgan=True) :
+    if use_lsgan :
         if smoothing :
             real_loss = tf.reduce_mean(tf.squared_difference(real, 0.9)) * 0.5
         else :

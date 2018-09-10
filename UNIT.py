@@ -5,7 +5,11 @@ import utils
 import params
 import ops
 from easydict import EasyDict as edict
-from network import encoder, decoder, attention, discriminator
+from network import encoder, decoder, attention, multiscale_discriminator
+
+#alias
+discriminator = multiscale_discriminator
+
 
 def unit(image_a, image_b, is_training = True, add_attention = True):
     #Encode Image
@@ -96,9 +100,12 @@ def unit(image_a, image_b, is_training = True, add_attention = True):
     KL_loss = params.loss.recon_kl_w * (ops.KL_divergence(z_a) + ops.KL_divergence(z_b)) + \
               params.loss.recon_kl_cyc_w * (ops.KL_divergence(z_a2b) + ops.KL_divergence(z_b2a))
 
-    gen_loss = params.loss.gan_w * (ops.generator_loss(fake_a) + ops.generator_loss(fake_b))
-
-    adv_loss = params.loss.gan_w * (ops.discriminator_loss(real_a, fake_a) + ops.discriminator_loss(real_b, fake_b))
+    gen_loss = 0.0
+    adv_loss = 0.0
+    for real, fake in zip(real_a + real_b, fake_a + fake_b):
+        print(real, fake)
+        gen_loss += params.loss.gan_w * (ops.generator_loss(fake) + ops.generator_loss(fake))
+        adv_loss += params.loss.gan_w * (ops.discriminator_loss(real, fake) + ops.discriminator_loss(real, fake))
 
     perceptual_loss = params.loss.vgg_w * ops.perceptual_loss(
                 tf.concat([image_a, image_b], axis = 0),

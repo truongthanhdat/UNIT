@@ -26,6 +26,7 @@ discriminator = edict()
 discriminator.n_discriminator = 6
 discriminator.channel = 64
 discriminator.weights_initializer = tf.truncated_normal_initializer(stddev=0.02)
+discriminator.n_scales = 3
 
 #Define Weights of Loss Function
 loss = edict()
