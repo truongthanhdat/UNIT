@@ -27,8 +27,17 @@ def instance_norm(x, scope='instance', is_training = True) :
                                            center = True, scale = True,
                                            scope = scope)
 
+def add_padding(x, kernel_size, pad_type = "reflect"):
+    pad = kernel_size // 2
+    if pad_type == 'zero' :
+        y = tf.pad(x, [[0, 0], [pad, pad], [pad, pad], [0, 0]])
+    elif pad_type == 'reflect' :
+        y = tf.pad(x, [[0, 0], [pad, pad], [pad, pad], [0, 0]], mode='REFLECT')
+    else:
+        raise ValueError("{} was not supported".format(pad_type))
+    return y
 
-def conv(inputs, dim, kernel_size, stride = 2,
+def conv(inputs, dim, kernel_size, stride = 2, pad_type = "reflect",
             activation_fn = leaky_relu, is_training = True,
             weights_initializer = initializers.xavier_initializer(), scope = "conv_0"):
     """
@@ -36,12 +45,19 @@ def conv(inputs, dim, kernel_size, stride = 2,
     """
 
     with tf.variable_scope(scope):
-        net = slim.conv2d(inputs, dim, kernel_size, stride,
+        inputs_with_pad = add_padding(inputs, kernel_size[0], pad_type = pad_type)
+        net = slim.conv2d(inputs_with_pad, dim, kernel_size, stride, padding = "VALID",
                             activation_fn = activation_fn, #is_training = is_training,
                             weights_initializer = weights_initializer)
         return net
 
-def deconv(inputs, dim, kernel_size, stride,
+
+def up_sample(x, scale_factor=2):
+    _, h, w, _ = x.get_shape().as_list()
+    new_size = [h * scale_factor, w * scale_factor]
+    return tf.image.resize_nearest_neighbor(x, size=new_size)
+
+def deconv(inputs, dim, kernel_size, stride, pad_type = "reflect",
             activation_fn = leaky_relu, is_training = True,
             weights_initializer = initializers.xavier_initializer(), scope = "deconv_0"):
     """
@@ -49,12 +65,15 @@ def deconv(inputs, dim, kernel_size, stride,
     """
 
     with tf.variable_scope(scope):
-        net = slim.conv2d_transpose(inputs, dim, kernel_size, stride,
+        net = up_sample(inputs, scale_factor = stride)
+        net = add_padding(net, kernel_size[0], pad_type = pad_type)
+        net = slim.conv2d(net, dim, kernel_size, 1, padding = "VALID",
                                     activation_fn = activation_fn, #is_training = is_training,
                                     weights_initializer = weights_initializer)
         return net
 
-def resblock(inputs, dim, kernel_size = [3, 3], stride = 1, dropout_ratio = 0.0,
+
+def resblock(inputs, dim, kernel_size = [3, 3], stride = 1, dropout_ratio = 0.0, pad_type = "reflect",
                 is_training = True, norm_fn = instance_norm, scope='resblock_0',
                 weights_initializer = initializers.xavier_initializer()):
     """
@@ -62,24 +81,26 @@ def resblock(inputs, dim, kernel_size = [3, 3], stride = 1, dropout_ratio = 0.0,
     """
     with tf.variable_scope(scope):
         with tf.variable_scope("res_1"):
-            net = slim.conv2d(inputs, dim, kernel_size, stride,
+            inputs_with_pad = add_padding(inputs, kernel_size[0], pad_type = pad_type)
+            net = slim.conv2d(inputs_with_pad, dim, kernel_size, stride, padding = "VALID",
                                 activation_fn = relu, #is_training = is_training,
                                 normalizer_fn = norm_fn, normalizer_params = {"is_training": is_training},
                                 weights_initializer = weights_initializer)
 
         with tf.variable_scope("res_2"):
-            net = slim.conv2d(net, dim, kernel_size, stride,
-                                activation_fn = relu, #is_training = is_training,
+            net = add_padding(net, kernel_size[0], pad_type = pad_type)
+            net = slim.conv2d(net, dim, kernel_size, stride, padding = "VALID",
+                                activation_fn = None, #is_training = is_training,
                                 normalizer_fn = norm_fn, normalizer_params = {"is_training": is_training},
                                 weights_initializer = weights_initializer)
 
-        with tf.variable_scope("res_3"):
-            net = slim.conv2d(net, dim, kernel_size, stride,
-                                activation_fn = relu, #is_training = is_training,
-                                normalizer_fn = norm_fn, normalizer_params = {"is_training": is_training},
-                                weights_initializer = weights_initializer)
+        #with tf.variable_scope("res_3"):
+        #    net = slim.conv2d(net, dim, kernel_size, stride,
+        #                        activation_fn = relu, #is_training = is_training,
+        #                        normalizer_fn = norm_fn, normalizer_params = {"is_training": is_training},
+        #                        weights_initializer = weights_initializer)
 
-        net = slim.dropout(net, keep_prob = 1 - dropout_ratio, is_training = is_training)
+        #net = slim.dropout(net, keep_prob = 1 - dropout_ratio, is_training = is_training)
 
         return net + inputs
 

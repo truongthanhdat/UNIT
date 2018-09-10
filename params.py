@@ -11,6 +11,7 @@ encoder.n_resblock = 4
 encoder.weights_initializer = tf.truncated_normal_initializer(stddev=0.02)
 encoder.norm_fn = ops.instance_norm
 encoder.dropout_ratio = 0.0
+encoder.padding = "reflect"
 
 #Define Decoder
 decoder = edict()
@@ -20,6 +21,7 @@ decoder.n_resblock = 4
 decoder.weights_initializer = tf.truncated_normal_initializer(stddev=0.02)
 decoder.norm_fn = ops.instance_norm
 decoder.dropout_ratio = 0.0
+decoder.padding = "reflect"
 
 #Define Discriminator
 discriminator = edict()
@@ -27,6 +29,7 @@ discriminator.n_discriminator = 6
 discriminator.channel = 64
 discriminator.weights_initializer = tf.truncated_normal_initializer(stddev=0.02)
 discriminator.n_scales = 3
+discriminator.padding = "reflect"
 
 #Define Weights of Loss Function
 loss = edict()
@@ -46,11 +49,12 @@ loss.perceptual_loss = edict({
 #Define Attetion Network
 attention = edict()
 attention.add_attention = False
+attention.padding = "reflect"
 
 #Define path
 path = edict()
 path.data_root_path = "./datasets/horse2zebra"
-path.outputs = "outputs"
+path.outputs = "outputs/horse2zebra"
 path.pretrained_perceptual_loss_path = "./pretrained/vgg_19.ckpt"
 
 #Define Learning Hyper-parameters
