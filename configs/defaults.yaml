@@ -1,0 +1,24 @@
+encoder:
+    n_conv: 3
+    n_resblock: 4
+    channels: 64
+
+decoder:
+    n_conv: 3
+    n_resblock: 4
+    channels: 64
+
+discriminator:
+    n_conv: 4
+    channels: 64
+    gan_type: lsgan
+    n_scale: 3
+
+loss:
+    L1_loss: 10
+    L1_loss_CC: 10
+    gan: 1
+    KL_loss: 0.01
+    KL_loss_CC: 0.01
+
+
