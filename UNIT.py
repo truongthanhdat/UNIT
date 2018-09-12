@@ -29,7 +29,7 @@ def unit(image_a, image_b, params, is_training = True):
     image_b2b = unit_decoder(z_b, "decoder_B", params.decoder, is_training)
     #Decode Image Cross Domain
     image_a2b = unit_decoder(z_a, "decoder_B", params.decoder, is_training)
-    image_b2a = unit_decoder(z_a, "decoder_A", params.decoder, is_training)
+    image_b2a = unit_decoder(z_b, "decoder_A", params.decoder, is_training)
     #Encode Image Again
     z_a2b = unit_encoder(image_a2b, "encoder_B", params.encoder, is_training)
     z_b2a = unit_encoder(image_b2a, "encoder_A", params.encoder, is_training)
@@ -38,9 +38,9 @@ def unit(image_a, image_b, params, is_training = True):
     image_b2a2b = unit_decoder(z_b2a, "decoder_B", params.decoder, is_training)
     #Discriminator
     real_a = unit_multiscale_discriminator(image_a, "discriminator_A", params.discriminator, is_training)
-    fake_a = unit_multiscale_discriminator(image_a2b, "discriminator_A", params.discriminator, is_training)
+    fake_a = unit_multiscale_discriminator(image_b2a, "discriminator_A", params.discriminator, is_training)
     real_b = unit_multiscale_discriminator(image_b, "discriminator_B", params.discriminator, is_training)
-    fake_b = unit_multiscale_discriminator(image_b2a, "discriminator_B", params.discriminator, is_training)
+    fake_b = unit_multiscale_discriminator(image_a2b, "discriminator_B", params.discriminator, is_training)
 
     #LOSS
     L1_loss = ops.L1_loss(image_a, image_a2a) + ops.L1_loss(image_b, image_b2b)
