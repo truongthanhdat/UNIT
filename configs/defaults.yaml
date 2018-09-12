@@ -22,7 +22,7 @@ loss:
     KL_loss_CC: 0.01
 
 learning:
-    batch_size: 1
+    batch_size: 2
     image_size: 256
     learning_rate: 0.0001
     beta1: 0.5
