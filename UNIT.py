@@ -6,7 +6,7 @@ from easydict import EasyDict
 import utils
 
 def unit_encoder(image, scope, params, is_training = True):
-    return network.encoder(image_a, scope = scope, is_training = is_training,
+    return network.encoder(image, scope = scope, is_training = is_training,
                     shared_scope = "shared_encoder", channels = params.channels,
                     n_conv = params.n_conv, n_resblock = params.n_resblock)
 

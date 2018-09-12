@@ -3,6 +3,8 @@ import numpy as np
 import scipy.misc
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
+import os
+import datetime
 
 def get_variables(scope):
     return [var for var in slim.get_variables() if scope in var.name]
@@ -67,4 +69,19 @@ class Timer:
     def toc(self):
         return time.time() - self._tic
 
+class Logger:
+    def __init__(self, path):
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        self.__logger = open(os.path.join(path, "log.txt"), "w")
+        now = datetime.datetime.now()
+        self.__logger.write("Logging at {}\n".format(str(now)))
+
+    def log(self, mes):
+        self.__logger.write("{}\n".format(mes))
+
+    def printf(self, mes):
+        print(mes)
+        self.log(mes)
 
