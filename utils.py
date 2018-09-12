@@ -76,7 +76,7 @@ class Logger:
 
         self.__logger = open(os.path.join(path, "log.txt"), "w")
         now = datetime.datetime.now()
-        self.__logger.write("Logging at {}\n".format(str(now)))
+        self.log("Logging at {}\n".format(str(now)))
 
     def log(self, mes):
         self.__logger.write("{}\n".format(mes))
@@ -85,3 +85,7 @@ class Logger:
         print(mes)
         self.log(mes)
 
+    def close(self):
+        now = datetime.datetime.now()
+        self.log("Finish Training at {}".format(str(now)))
+        self.__logger.close()

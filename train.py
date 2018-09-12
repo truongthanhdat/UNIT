@@ -94,9 +94,10 @@ if __name__ == "__main__":
             summary_writer.add_summary(summary, counter)
             counter += 1
 
-        print("[{:07d}/{:07d}] Elapsed time in update: {}".format(iter + 1, params.learning.num_iters, timer.toc()))
+        print("[{:07d}/{:07d}] Elapsed time in update: {}".format(iter + 1, params.learning.n_iter, timer.toc()))
 
         if (iter + 1) % params.learning.checkpoint_steps == 0:
             saver.save(sess, os.path.join(params.path.outputs, "model.ckpt"))
             print("Saving checkpoint at iteration {:07d}".format(iter + 1))
 
+    logger.close()
