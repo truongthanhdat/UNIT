@@ -21,4 +21,18 @@ loss:
     KL_loss: 0.01
     KL_loss_CC: 0.01
 
+learning:
+    batch_size: 1
+    image_size: 256
+    learning_rate: 0.0001
+    beta1: 0.5
+    beta2: 0.999
+    n_iter: 1000000
+    summary: 50
+    checkpoint_steps: 1000
+    
+path:
+    experiment: horse2zebra
+    data_root_path: datasets/horse2zebra
+    outputs: outputs
 
