@@ -3,6 +3,8 @@ from easydict import EasyDict as edict
 import tensorflow as tf
 import ops
 
+__experiment = "horse2zebra"
+
 #Define Encoder
 encoder = edict()
 encoder.channel = 64
@@ -49,8 +51,8 @@ attention.add_attention = False
 
 #Define path
 path = edict()
-path.data_root_path = "./datasets/horse2zebra"
-path.outputs = "outputs"
+path.data_root_path = os.path.join("datasets", __experiment)
+path.outputs = os.path.join("outputs", __experiment)
 path.pretrained_perceptual_loss_path = "./pretrained/vgg_19.ckpt"
 
 #Define Learning Hyper-parameters
